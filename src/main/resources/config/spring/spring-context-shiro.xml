@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+     http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<description>Apache Shiro 配置</description>
+	
+	<!-- 缓存管理器 使用Ehcache实现 -->
+    <bean id="shiroEhcacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <property name="cacheManagerConfigFile" value="classpath:/config/spring/ehcache-shiro.xml"/>
+    </bean>
+
+	<!-- 安全管理器 -->
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="realm" ref="userRealm" />
+		<!-- 会话管理器 -->
+		<property name="sessionManager">
+			<bean class="org.apache.shiro.web.session.mgt.ServletContainerSessionManager" />
+		</property>
+	</bean>
+
+	<!-- Realm实现 -->
+	<bean id="userRealm" class="com.yoyo.shiro.UserRealm">
+		<property name="cachingEnabled" value="true"/>
+		<property name="cacheManager" ref="shiroEhcacheManager" />
+        <property name="authorizationCachingEnabled" value="true"/>
+        <property name="authorizationCacheName" value="authorizationCache"/>
+	</bean>
+	
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+		<property name="securityManager" ref="securityManager" />
+		<property name="loginUrl" value="/login" />
+		<property name="unauthorizedUrl" value="/unauthorized.jsp" />
+		<property name="filters">
+			<map>  
+             	<entry key="urlperms" value-ref="urlperms"/>  
+         	</map>  
+		</property> 
+		<property name="filterChainDefinitions">
+			<value>
+				<!-- 静态资源允许访问 -->
+				/resource/** = anon
+				/error/** = anon
+				/login = anon
+				/loginout = anon
+				/unauthorized.jsp = anon
+				/**/ajax/** = user
+				/index = user
+				/** = urlperms
+			</value>
+		</property>
+	</bean>
+	
+	<!-- Shiro生命周期处理器 -->
+	<bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor" />
+	
+	<!-- 自定义URL拦截器 -->
+	<bean id="urlperms" class="com.yoyo.shiro.UrlPermissionsAuthorizationFilter" />
+</beans>
